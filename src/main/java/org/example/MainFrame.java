@@ -6,13 +6,6 @@ import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 
-
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.io.File;
-import java.io.IOException;
-
 public class MainFrame extends JFrame implements TaskManagerObserver {
     private TaskManager taskManager;
     private TaskManagerHistory history;
@@ -20,44 +13,67 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
     private DefaultListModel<String> listModel;
     private File currentFile;
     private TaskFactory factory;
+    private String username;
 
-    public MainFrame(TaskManager tm, TaskManagerHistory h, TaskFactory f) {
+    public MainFrame(TaskManager tm, TaskManagerHistory h, TaskFactory f, String username) {
         this.taskManager = tm;
         this.history = h;
         this.factory = f;
+        this.username = username;
         this.taskManager.addObserver(this);
 
-        setTitle("TODO List");
-        setSize(600,400);
+        // Aumentando o tamanho da janela
+        setSize(800, 600);
+        setTitle("To Do List Application - Usuário: " + username);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+
+        // Definir cor de fundo da janela
+        getContentPane().setBackground(Color.LIGHT_GRAY);
+
+        // Painel de topo com o título estilizado
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BorderLayout());
+        topPanel.setBackground(Color.DARK_GRAY);
+
+        JLabel titleLabel = new JLabel("TO DO LIST", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 30));
+        titleLabel.setForeground(Color.WHITE);
+        topPanel.add(titleLabel, BorderLayout.CENTER);
 
         listModel = new DefaultListModel<>();
         taskList = new JList<>(listModel);
+        JScrollPane scrollPane = new JScrollPane(taskList);
 
+        // Painel de botões com layout mais visível (2x3)
         JPanel buttonsPanel = new JPanel();
+        buttonsPanel.setLayout(new GridLayout(2, 3, 10, 10));
+        buttonsPanel.setBackground(Color.LIGHT_GRAY);
+        buttonsPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+
         JButton addBtn = new JButton("Adicionar");
         JButton removeBtn = new JButton("Remover");
         JButton editBtn = new JButton("Editar");
-        JButton doneBtn = new JButton("Marcar Concluído");
-        JButton undoneBtn = new JButton("Marcar Não Concluído");
+        JButton doneBtn = new JButton("Concluído");
+        JButton undoneBtn = new JButton("Não Concluído");
         JButton undoBtn = new JButton("Undo");
 
+        // Ações dos botões
         addBtn.addActionListener(e -> addTask());
         removeBtn.addActionListener(e -> removeSelectedTask());
         editBtn.addActionListener(e -> editSelectedTask());
         doneBtn.addActionListener(e -> markSelectedTask(true));
         undoneBtn.addActionListener(e -> markSelectedTask(false));
-
-        // Ação do botão Undo:
         undoBtn.addActionListener(e -> undo());
 
+        // Adiciona os botões no painel
         buttonsPanel.add(addBtn);
         buttonsPanel.add(removeBtn);
         buttonsPanel.add(editBtn);
         buttonsPanel.add(doneBtn);
         buttonsPanel.add(undoneBtn);
-        buttonsPanel.add(undoBtn); // Apenas o undo, sem redo
+        buttonsPanel.add(undoBtn);
 
+        // Barra de menu
         JMenuBar menuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("Arquivo");
         JMenuItem saveItem = new JMenuItem("Salvar");
@@ -71,7 +87,9 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
         menuBar.add(fileMenu);
         setJMenuBar(menuBar);
 
-        add(new JScrollPane(taskList), BorderLayout.CENTER);
+        // Adiciona os componentes no frame
+        add(topPanel, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
         add(buttonsPanel, BorderLayout.SOUTH);
     }
 
@@ -79,7 +97,6 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
         String title = JOptionPane.showInputDialog(this, "Título da tarefa:");
         if(title != null && !title.isEmpty()) {
             String desc = JOptionPane.showInputDialog(this, "Descrição da tarefa:");
-            // Antes de alterar o estado, salvamos o estado atual no history.
             history.saveState(taskManager.createMemento());
             Task t = factory.createTask(title, desc == null ? "" : desc);
             taskManager.addTask(t);
@@ -89,7 +106,6 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
     private void removeSelectedTask() {
         int index = taskList.getSelectedIndex();
         if(index >= 0) {
-            // Antes de remover, salvamos o estado
             history.saveState(taskManager.createMemento());
             Task t = taskManager.getTasks().get(index);
             taskManager.removeTask(t);
@@ -103,7 +119,6 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
             String newTitle = JOptionPane.showInputDialog(this, "Novo título:", oldTask.getTitle());
             if(newTitle != null && !newTitle.isEmpty()) {
                 String newDesc = JOptionPane.showInputDialog(this, "Nova descrição:", oldTask.getDescription());
-                // Salva estado antes da modificação
                 history.saveState(taskManager.createMemento());
                 oldTask.setTitle(newTitle);
                 oldTask.setDescription(newDesc);
@@ -123,7 +138,6 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
     }
 
     private void undo() {
-        // Realiza o undo usando o history e o taskManager
         Memento m = history.undo();
         if(m != null) {
             taskManager.restoreMemento(m);
@@ -134,10 +148,8 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
 
     private void saveTasks() {
         if(currentFile == null) {
-            JFileChooser fc = new JFileChooser();
-            if(fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-                currentFile = fc.getSelectedFile();
-            }
+            // Usa arquivo específico do usuário
+            currentFile = new File(username + "_tasks.db");
         }
         if(currentFile != null) {
             try {
@@ -153,18 +165,13 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
         if(fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File f = fc.getSelectedFile();
             try {
-                // Salva estado atual antes de carregar
                 history.saveState(taskManager.createMemento());
-
-                // Carrega tarefas do arquivo
                 java.util.List<Task> loaded = TaskFileHandler.loadTasks(f);
 
-                // Remove todas as tarefas atuais
                 for (Task t : new java.util.ArrayList<>(taskManager.getTasks())) {
                     taskManager.removeTask(t);
                 }
 
-                // Adiciona as tarefas carregadas
                 for (Task t : loaded) {
                     taskManager.addTask(t);
                 }
@@ -184,4 +191,3 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
         }
     }
 }
-
