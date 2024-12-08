@@ -22,15 +22,15 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
         this.username = username;
         this.taskManager.addObserver(this);
 
-        // Aumentando o tamanho da janela
+        // Define tamanho da janela
         setSize(800, 600);
         setTitle("To Do List Application - Usuário: " + username);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-        // Definir cor de fundo da janela
+        // Define cor de fundo da janela
         getContentPane().setBackground(Color.LIGHT_GRAY);
 
-        // Painel de topo com o título estilizado
+        // Painel de topo com título estilizado
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BorderLayout());
         topPanel.setBackground(Color.DARK_GRAY);
@@ -42,9 +42,14 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
 
         listModel = new DefaultListModel<>();
         taskList = new JList<>(listModel);
+
+        // Aumenta a fonte das tasks e a altura da célula
+        taskList.setFont(new Font("Arial", Font.PLAIN, 18));
+        taskList.setFixedCellHeight(30);
+
         JScrollPane scrollPane = new JScrollPane(taskList);
 
-        // Painel de botões com layout mais visível (2x3)
+        // Painel de botões inferior
         JPanel buttonsPanel = new JPanel();
         buttonsPanel.setLayout(new GridLayout(2, 3, 10, 10));
         buttonsPanel.setBackground(Color.LIGHT_GRAY);
@@ -65,7 +70,7 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
         undoneBtn.addActionListener(e -> markSelectedTask(false));
         undoBtn.addActionListener(e -> undo());
 
-        // Adiciona os botões no painel
+        // Adiciona os botões ao painel
         buttonsPanel.add(addBtn);
         buttonsPanel.add(removeBtn);
         buttonsPanel.add(editBtn);
@@ -87,7 +92,7 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
         menuBar.add(fileMenu);
         setJMenuBar(menuBar);
 
-        // Adiciona os componentes no frame
+        // Adiciona os componentes ao frame
         add(topPanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
         add(buttonsPanel, BorderLayout.SOUTH);
@@ -148,7 +153,6 @@ public class MainFrame extends JFrame implements TaskManagerObserver {
 
     private void saveTasks() {
         if(currentFile == null) {
-            // Usa arquivo específico do usuário
             currentFile = new File(username + "_tasks.db");
         }
         if(currentFile != null) {

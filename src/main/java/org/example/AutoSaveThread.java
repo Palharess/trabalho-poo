@@ -16,6 +16,7 @@ public class AutoSaveThread extends Thread {
         while(!isInterrupted()) {
             try {
                 Thread.sleep(30000); // salva a cada 30s
+                System.out.println("Salvando automaticamente...");
                 TaskFileHandler.saveTasks(taskManager.getTasks(), file);
             } catch(InterruptedException e) {
                 Thread.currentThread().interrupt();
