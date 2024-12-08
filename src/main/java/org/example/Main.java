@@ -5,14 +5,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-
-
 public class Main {
     public static void main(String[] args) {
         // Pede o nome do usuário
         String username = JOptionPane.showInputDialog(null, "Qual é o seu nome?", "Bem-vindo", JOptionPane.QUESTION_MESSAGE);
 
-        // Se o usuário cancelar ou deixar em branco, podemos dar um nome padrão
         if (username == null || username.trim().isEmpty()) {
             username = "usuario_padrao";
         }
@@ -36,14 +33,17 @@ public class Main {
             }
         }
 
-        String finalUsername = username; // variável final para uso na lambda
+        String finalUsername = username;
+
         SwingUtilities.invokeLater(() -> {
             MainFrame frame = new MainFrame(taskManager, history, factory, finalUsername);
-
-            // Força atualização da UI após adicionar o observador
             taskManager.refreshObservers();
 
-            // Ao fechar a janela, salvamos as tasks do usuário
+            // Cria e inicia a AutoSaveThread após a janela ser exibida
+            AutoSaveThread autoSaveThread = new AutoSaveThread(taskManager, dbFile);
+            autoSaveThread.start();
+
+            // Ao fechar a janela, salvamos as tasks e paramos a thread de auto-save
             frame.addWindowListener(new java.awt.event.WindowAdapter() {
                 @Override
                 public void windowClosing(java.awt.event.WindowEvent windowEvent) {
@@ -52,6 +52,8 @@ public class Main {
                     } catch (IOException e) {
                         System.err.println("Erro ao salvar as tarefas de " + finalUsername + ": " + e.getMessage());
                     }
+                    // Para a autoSaveThread
+                    autoSaveThread.stopAutoSave();
                 }
             });
 

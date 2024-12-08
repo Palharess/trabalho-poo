@@ -1,6 +1,13 @@
 import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.example.SimpleTask;
+import org.example.Task;
+import org.example.TaskManager;
 import org.junit.Before;
-import java.org.junit.Test;
+import org.junit.Test;
+
 
 public class TaskManagerTest {
     private TaskManager tm;
